@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Navratri 5-Days QR Pass Scanner</title>
+  <!-- Fast QR Scanner Library (CDN) -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: #110306;
+      color: #f7f3ee;
+      min-height: 100vh;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .scanner-card {
+      width: 100%;
+      max-width: 560px;
+      background: #1d070b;
+      border: 2px solid #d4af37;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+    }
+
+    .header-title {
+      font-size: 20px;
+      color: #ffd54f;
+      text-align: center;
+      margin-bottom: 2px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .header-sub {
+      font-size: 11.5px;
+      color: #c9b389;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    /* DAY SELECTOR TABS */
+    .day-selector-box {
+      background: #2b080f;
+      border: 1.5px solid #d4af37;
+      border-radius: 9px;
+      padding: 10px;
+      margin-bottom: 14px;
+    }
+
+    .day-sel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .day-sel-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: #ffd54f;
+      text-transform: uppercase;
+    }
+
+    .day-active-tag {
+      font-size: 12px;
+      font-weight: 900;
+      color: #ffd54f;
+      background: #140205;
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid #73591f;
+    }
+
+    .day-chips {
+      display: flex;
+      gap: 6px;
+    }
+
+    .day-chip {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      background: #140205;
+      border: 1.5px solid #73591f;
+      color: #ccc;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .day-chip.active {
+      background: #ffd54f;
+      color: #110306;
+      border-color: #ffd54f;
+      box-shadow: 0 0 10px rgba(255, 213, 79, 0.7);
+    }
+
+    /* REGULAR LIVE VIEWFINDER SCANNER */
+    .viewfinder-wrapper {
+      position: relative;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #d4af37;
+      margin-bottom: 14px;
+      box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8);
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #reader {
+      width: 100% !important;
+      border: none !important;
+    }
+
+    #reader video {
+      border-radius: 10px;
+      object-fit: cover;
+    }
+
+    /* LASER SCANNING ANIMATION */
+    .scanner-laser {
+      position: absolute;
+      top: 15%;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #ffd54f, #fff, #ffd54f, transparent);
+      box-shadow: 0 0 12px #ffd54f, 0 0 20px #ffb300;
+      animation: laserScan 2s infinite linear;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    @keyframes laserScan {
+      0% { top: 18%; opacity: 0.8; }
+      50% { top: 82%; opacity: 1; }
+      100% { top: 18%; opacity: 0.8; }
+    }
+
+    .cam-controls-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .cam-btn {
+      flex: 1;
+      padding: 9px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1px solid #d4af37;
+      background: #2b070f;
+      color: #ffd54f;
+      text-align: center;
+    }
+
+    .cam-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* RESULT VERIFICATION CARD */
+    #verification-card {
+      display: none;
+      background: #23060c;
+      border: 2px solid #4caf50;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 15px;
+      animation: popIn 0.25s ease-out;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .verif-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    }
+
+    .verif-badge {
+      font-size: 12px;
+      font-weight: 900;
+      padding: 5px 12px;
+      border-radius: 12px;
+      background: #2e7d32;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .verif-badge.warn {
+      background: #d84315;
+    }
+
+    .verif-time {
+      font-size: 11px;
+      color: #bbb;
+    }
+
+    .verif-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .verif-item {
+      background: #140205;
+      padding: 7px 9px;
+      border-radius: 6px;
+      border-left: 3px solid #d4af37;
+    }
+
+    .verif-label {
+      font-size: 9.5px;
+      color: #ffd54f;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .verif-val {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 2px;
+    }
+
+    .verif-item.full {
+      grid-column: span 2;
+    }
+
+    /* 5 DAYS STATUS IN RESULT */
+    .five-day-status-box {
+      background: #140205;
+      border: 1.5px solid #73591f;
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 12px;
+    }
+
+    .five-day-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: #ffd54f;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .day-dots-row {
+      display: flex;
+      gap: 5px;
+    }
+
+    .status-dot-item {
+      flex: 1;
+      padding: 5px 0;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 800;
+      border-radius: 4px;
+      background: #2a080f;
+      color: #888;
+      border: 1px solid #441019;
+    }
+
+    .status-dot-item.entered {
+      background: #1b5e20;
+      color: #fff;
+      border-color: #4caf50;
+    }
+
+    .btn-next-scan {
+      display: block;
+      width: 100%;
+      background: #2e7d32;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* STATS SUMMARY BAR */
+    .stats-bar {
+      display: flex;
+      gap: 6px;
+      background: #21050a;
+      border: 1px solid #4d1520;
+      border-radius: 8px;
+      padding: 8px 6px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .stat-pill {
+      flex: 1;
+    }
+
+    .stat-pill .num {
+      font-size: 14px;
+      font-weight: 900;
+      color: #ffd54f;
+    }
+
+    .stat-pill .lbl {
+      font-size: 9.5px;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+
+    /* HISTORY & RESET BAR */
+    .history-card {
+      background: #140205;
+      border: 1px solid #3d141b;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .history-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .history-title {
+      font-size: 11.5px;
+      font-weight: 900;
+      color: #ffd54f;
+      text-transform: uppercase;
+    }
+
+    .btn-reset-history {
+      background: #b71c1c;
+      color: #fff;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .history-filter-select {
+      background: #22050b;
+      color: #ffd54f;
+      border: 1px solid #73591f;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+
+    .history-row {
+      background: #20060b;
+      border: 1px solid #3d101a;
+      padding: 6px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-user {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .history-meta {
+      font-size: 9.5px;
+      color: #999;
+    }
+
+    .history-day-tag {
+      background: #ffd54f;
+      color: #110306;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 9.5px;
+      font-weight: 900;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="scanner-card">
+    <div class="header-title">Live QR Pass Scanner</div>
+    <div class="header-sub">5 Days Entry Verification & Attendance Tracker</div>
+
+    <!-- 5 DAYS SELECTOR TABS -->
+    <div class="day-selector-box">
+      <div class="day-sel-head">
+        <span class="day-sel-title">Select Active Event Day:</span>
+        <span class="day-active-tag" id="active-day-label">DAY 1 ACTIVE</span>
+      </div>
+      <div class="day-chips">
+        <div class="day-chip active" onclick="setEventDay(1)">DAY 1</div>
+        <div class="day-chip" onclick="setEventDay(2)">DAY 2</div>
+        <div class="day-chip" onclick="setEventDay(3)">DAY 3</div>
+        <div class="day-chip" onclick="setEventDay(4)">DAY 4</div>
+        <div class="day-chip" onclick="setEventDay(5)">DAY 5</div>
+      </div>
+    </div>
+
+    <!-- REGULAR LIVE VIEWFINDER SCREEN -->
+    <div class="viewfinder-wrapper" id="viewfinder">
+      <div class="scanner-laser"></div>
+      <div id="reader"></div>
+      <div id="camera-loading-text" style="color: #ffd54f; font-size: 12px; font-weight: 700; padding: 20px;">Starting Camera Scanner...</div>
+    </div>
+
+    <div class="cam-controls-row">
+      <button type="button" class="cam-btn" onclick="switchCamera()">🔄 Switch Front/Back Camera</button>
+      <button type="button" class="cam-btn" onclick="restartCamera()">⚡ Restart Scanner</button>
+    </div>
+
+    <!-- VERIFICATION RESULT MODAL / CARD -->
+    <div id="verification-card">
+      <div class="verif-top-bar">
+        <span class="verif-badge" id="res-status-badge">ENTRY APPROVED</span>
+        <span class="verif-time" id="res-time-badge">--:--</span>
+      </div>
+
+      <div class="verif-grid">
+        <div class="verif-item">
+          <div class="verif-label">Student Name</div>
+          <div class="verif-val" id="res-name">-</div>
+        </div>
+        <div class="verif-item">
+          <div class="verif-label">Pass ID</div>
+          <div class="verif-val" id="res-passid">-</div>
+        </div>
+        <div class="verif-item">
+          <div class="verif-label">Class / Year</div>
+          <div class="verif-val" id="res-class">-</div>
+        </div>
+        <div class="verif-item">
+          <div class="verif-label">College / Sanstha</div>
+          <div class="verif-val" id="res-college">-</div>
+        </div>
+        <div class="verif-item full">
+          <div class="verif-label">Event Name</div>
+          <div class="verif-val" id="res-event">-</div>
+        </div>
+      </div>
+
+      <!-- 5-DAY ENTRY ATTENDANCE STATUS -->
+      <div class="five-day-status-box">
+        <div class="five-day-title">5-Day Entry Status for this Student:</div>
+        <div class="day-dots-row">
+          <div class="status-dot-item" id="dot-1">DAY 1</div>
+          <div class="status-dot-item" id="dot-2">DAY 2</div>
+          <div class="status-dot-item" id="dot-3">DAY 3</div>
+          <div class="status-dot-item" id="dot-4">DAY 4</div>
+          <div class="status-dot-item" id="dot-5">DAY 5</div>
+        </div>
+      </div>
+
+      <button type="button" class="btn-next-scan" onclick="dismissResult()">✓ Done / Scan Next Pass</button>
+    </div>
+
+    <!-- 5 DAYS ATTENDANCE STATS COUNTER -->
+    <div class="stats-bar">
+      <div class="stat-pill">
+        <div class="num" id="stat-d1">0</div>
+        <div class="lbl">Day 1</div>
+      </div>
+      <div class="stat-pill">
+        <div class="num" id="stat-d2">0</div>
+        <div class="lbl">Day 2</div>
+      </div>
+      <div class="stat-pill">
+        <div class="num" id="stat-d3">0</div>
+        <div class="lbl">Day 3</div>
+      </div>
+      <div class="stat-pill">
+        <div class="num" id="stat-d4">0</div>
+        <div class="lbl">Day 4</div>
+      </div>
+      <div class="stat-pill">
+        <div class="num" id="stat-d5">0</div>
+        <div class="lbl">Day 5</div>
+      </div>
+      <div class="stat-pill" style="border-left: 1px solid #73591f;">
+        <div class="num" id="stat-total">0</div>
+        <div class="lbl">Total</div>
+      </div>
+    </div>
+
+    <!-- ENTRY HISTORY LOG & RESET BUTTON -->
+    <div class="history-card">
+      <div class="history-header-row">
+        <span class="history-title">Scanned Entries Log</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <select id="filter-day-select" class="history-filter-select" onchange="renderHistory()">
+            <option value="all">All Days</option>
+            <option value="1">Day 1</option>
+            <option value="2">Day 2</option>
+            <option value="3">Day 3</option>
+            <option value="4">Day 4</option>
+            <option value="5">Day 5</option>
+          </select>
+          <button type="button" class="btn-reset-history" onclick="resetAllData()">🔄 Reset Button</button>
+        </div>
+      </div>
+      <div class="history-list" id="history-container">
+        <div style="font-size: 11px; color: #777; text-align: center; padding: 10px;">Abhi tak koi pass scan nahi hua.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeDay = 1;
+    let html5QrCode = null;
+    let currentFacingMode = "environment";
+    let isProcessing = false;
+    let lastScannedId = "";
+
+    // Database structure saved in localStorage:
+    // attendanceDB[passId] = { name, passId, class, college, event, days: [1, 2, ...] }
+    // scanLogs = [ { passId, name, day, time, isRepeat }, ... ]
+    let attendanceDB = {};
+    let scanLogs = [];
+
+    // Load from localStorage
+    try {
+      const savedDB = localStorage.getItem('navratri_pass_db');
+      if (savedDB) attendanceDB = JSON.parse(savedDB);
+      const savedLogs = localStorage.getItem('navratri_pass_logs');
+      if (savedLogs) scanLogs = JSON.parse(savedLogs);
+    } catch (e) {}
+
+    // Audio beeper for feedback
+    function playBeep(success) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        if (success) {
+          osc.frequency.setValueAtTime(800, ctx.currentTime);
+          osc.frequency.setValueAtTime(1050, ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.22);
+        } else {
+          osc.frequency.setValueAtTime(320, ctx.currentTime);
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.35);
+        }
+      } catch (err) {}
+
+      if (navigator.vibrate) {
+        navigator.vibrate(success ? 100 : [120, 80, 120]);
+      }
+    }
+
+    function setEventDay(dayNum) {
+      activeDay = dayNum;
+      document.querySelectorAll('.day-chip').forEach((el, idx) => {
+        el.classList.toggle('active', (idx + 1) === dayNum);
+      });
+      document.getElementById('active-day-label').innerText = 'DAY ' + dayNum + ' ACTIVE';
+      document.getElementById('filter-day-select').value = String(dayNum);
+      renderHistory();
+    }
+
+    // START REGULAR LIVE WEBCAM SCANNER
+    function startRegularScanner() {
+      const loadingText = document.getElementById('camera-loading-text');
+      loadingText.style.display = 'block';
+
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
+
+      const config = {
+        fps: 15,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.75);
+          return { width: edge, height: edge };
+        },
+        aspectRatio: 1.0
+      };
+
+      html5QrCode.start(
+        { facingMode: currentFacingMode },
+        config,
+        (decodedText) => {
+          onQrCodeDetected(decodedText);
+        },
+        (errorMessage) => {
+          // scanning frame...
+        }
+      ).then(() => {
+        loadingText.style.display = 'none';
+      }).catch(err => {
+        loadingText.innerHTML = `
+          Camera access error: ${err}<br>
+          <span style="font-size:11px;color:#aaa;">Agar phone browser me camera block ho, toh browser settings me camera permission allow kijiye.</span>
+        `;
+      });
+    }
+
+    function switchCamera() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+          startRegularScanner();
+        }).catch(err => {
+          currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+          startRegularScanner();
+        });
+      }
+    }
+
+    function restartCamera() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          startRegularScanner();
+        }).catch(err => startRegularScanner());
+      } else {
+        startRegularScanner();
+      }
+    }
+
+    // QR CODE DETECTED HANDLER
+    function onQrCodeDetected(rawText) {
+      if (isProcessing) return;
+
+      const info = parsePayload(rawText);
+      const passId = info['PASS ID'] || ('RU26-' + Math.floor(Math.random() * 900 + 100));
+
+      if (passId === lastScannedId && document.getElementById('verification-card').style.display === 'block') {
+        return; // Don't re-trigger while currently displaying same pass
+      }
+
+      isProcessing = true;
+      lastScannedId = passId;
+
+      const name = info['NAME'] || 'Pass Holder';
+      const className = info['CLASS'] || 'Student';
+      const college = info['COLLEGE'] || 'ITRA, Jamnagar';
+      const eventName = info['EVENT'] || 'RAAS UTSAV 2026';
+
+      // Check student record in attendance database
+      if (!attendanceDB[passId]) {
+        attendanceDB[passId] = {
+          name: name,
+          passId: passId,
+          className: className,
+          college: college,
+          eventName: eventName,
+          days: []
+        };
+      }
+
+      const record = attendanceDB[passId];
+      const isRepeatToday = record.days.includes(activeDay);
+
+      const statusBadge = document.getElementById('res-status-badge');
+      if (isRepeatToday) {
+        statusBadge.className = 'verif-badge warn';
+        statusBadge.innerText = `⚠️ ALREADY ENTERED (DAY ${activeDay})`;
+        playBeep(false);
+      } else {
+        record.days.push(activeDay);
+        statusBadge.className = 'verif-badge';
+        statusBadge.innerText = `✅ ENTRY APPROVED (DAY ${activeDay})`;
+        playBeep(true);
+      }
+
+      // Save to localStorage
+      try {
+        localStorage.setItem('navratri_pass_db', JSON.stringify(attendanceDB));
+      } catch (e) {}
+
+      // Populate Result Details
+      document.getElementById('res-name').innerText = name;
+      document.getElementById('res-passid').innerText = passId;
+      document.getElementById('res-class').innerText = className;
+      document.getElementById('res-college').innerText = college;
+      document.getElementById('res-event').innerText = eventName;
+      document.getElementById('res-time-badge').innerText = new Date().toLocaleTimeString();
+
+      // Update 5-Days Attendance Visual Indicators
+      for (let d = 1; d <= 5; d++) {
+        const dot = document.getElementById('dot-' + d);
+        if (record.days.includes(d)) {
+          dot.className = 'status-dot-item entered';
+          dot.innerText = 'DAY ' + d + ' ✓';
+        } else {
+          dot.className = 'status-dot-item';
+          dot.innerText = 'DAY ' + d;
+        }
+      }
+
+      // Add to Log
+      addScanLog(name, passId, activeDay, isRepeatToday);
+      updateStats();
+
+      // Show Verification Popup Card
+      const card = document.getElementById('verification-card');
+      card.style.display = 'block';
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function parsePayload(text) {
+      const data = {};
+      const parts = text.split('|');
+      parts.forEach(p => {
+        const kv = p.split(':');
+        if (kv.length >= 2) {
+          data[kv[0].trim()] = kv.slice(1).join(':').trim();
+        }
+      });
+      return data;
+    }
+
+    function dismissResult() {
+      document.getElementById('verification-card').style.display = 'none';
+      setTimeout(() => {
+        isProcessing = false;
+        lastScannedId = "";
+      }, 500);
+    }
+
+    function addScanLog(name, passId, day, isRepeat) {
+      scanLogs.unshift({
+        name: name,
+        passId: passId,
+        day: day,
+        time: new Date().toLocaleTimeString(),
+        isRepeat: isRepeat
+      });
+
+      try {
+        localStorage.setItem('navratri_pass_logs', JSON.stringify(scanLogs));
+      } catch (e) {}
+
+      renderHistory();
+    }
+
+    function updateStats() {
+      const dayCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      Object.values(attendanceDB).forEach(rec => {
+        rec.days.forEach(d => {
+          if (dayCounts[d] !== undefined) dayCounts[d]++;
+        });
+      });
+
+      document.getElementById('stat-d1').innerText = dayCounts[1];
+      document.getElementById('stat-d2').innerText = dayCounts[2];
+      document.getElementById('stat-d3').innerText = dayCounts[3];
+      document.getElementById('stat-d4').innerText = dayCounts[4];
+      document.getElementById('stat-d5').innerText = dayCounts[5];
+      document.getElementById('stat-total').innerText = Object.keys(attendanceDB).length;
+    }
+
+    function renderHistory() {
+      const filter = document.getElementById('filter-day-select').value;
+      const container = document.getElementById('history-container');
+
+      let filtered = scanLogs;
+      if (filter !== 'all') {
+        filtered = scanLogs.filter(item => String(item.day) === filter);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="font-size: 11px; color: #777; text-align: center; padding: 10px;">Is filter me koi entry nahi mili.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.slice(0, 50).map(item => `
+        <div class="history-row" style="${item.isRepeat ? 'border-color: #d84315;' : ''}">
+          <div>
+            <div class="history-user">${item.name} (${item.passId})</div>
+            <div class="history-meta">${item.time} ${item.isRepeat ? '• <span style="color:#ff8a80;">Repeat Scan</span>' : '• <span style="color:#81c784;">Entered</span>'}</div>
+          </div>
+          <span class="history-day-tag">DAY ${item.day}</span>
+        </div>
+      `).join('');
+    }
+
+    // RESET BUTTON (REST BUTTON)
+    function resetAllData() {
+      if (confirm("⚠️ Kya aap Scanner ka pura attendance data aur 5-Days history RESET karna chahte hain?")) {
+        attendanceDB = {};
+        scanLogs = [];
+        try {
+          localStorage.removeItem('navratri_pass_db');
+          localStorage.removeItem('navratri_pass_logs');
+        } catch (e) {}
+        updateStats();
+        renderHistory();
+        dismissResult();
+        alert("Pura attendance aur scanner history data reset ho gaya!");
+      }
+    }
+
+    window.onload = function() {
+      updateStats();
+      renderHistory();
+      startRegularScanner();
+    };
+  </script>
+</body>
+</html>
